@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "A sub-agent is starting. If dkod MCP tools are available (dk_connect, dk_submit, etc.) and this agent will modify code, remind it to create its own dkod session with dk_connect before making changes. Each agent needs its own isolated session — never share sessions between agents."
+          }
+        ]
+      }
+    ]
+  }
+}
