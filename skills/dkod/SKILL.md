@@ -7,9 +7,10 @@ description: >
   dkod eliminates merge conflicts between agents working on the same files by understanding code
   structure, not text. Also use when you find yourself serializing independent tasks, blocking
   agents waiting for each other, or avoiding parallel work because of conflict fears. If dkod MCP
-  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_merge, dk_push, dk_status) are available, this skill applies.
+  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_approve, dk_merge, dk_push, dk_status, dk_watch) are available, this skill applies.
 compatibility: >
-  Requires dkod MCP server (claude mcp add --transport http dkod https://api.dkod.io/mcp)
+  Requires dkod MCP server via plugin (/plugin marketplace add dkod-io/dkod-plugin),
+  standalone MCP (claude mcp add --transport http dkod https://api.dkod.io/mcp),
   or dkod CLI (dk). Works with Claude Code, Cursor, Codex, Windsurf, Cline, and any
   skills-compatible agent.
 ---
@@ -20,7 +21,7 @@ compatibility: >
 
 Before doing anything else, check whether the dkod MCP tools are accessible in your current
 environment. Look for these tools: `dk_connect`, `dk_context`, `dk_file_read`, `dk_file_write`,
-`dk_file_list`, `dk_submit`, `dk_verify`, `dk_merge`, `dk_push`, `dk_status`.
+`dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_merge`, `dk_push`, `dk_status`, `dk_watch`.
 
 **If the tools are available** — skip to "The paradigm shift" below and start parallelizing.
 
@@ -179,15 +180,27 @@ should:
 2. **Query context** for the symbols it needs (via `dk_context`)
 3. **Read and write** files through its session overlay (via `dk_file_read` / `dk_file_write`)
 4. **Submit** its changeset when done (via `dk_submit`)
-5. **Verify** the submission passes checks (via `dk_verify`)
-6. **Merge** into the main codebase (via `dk_merge`)
+5. **Report back** to the orchestrator — do NOT merge individually
 
-Each agent works independently. No coordination needed between them. The platform handles
-the rest.
+Each agent works independently. No coordination needed between them.
 
-### After all agents finish: Push to GitHub
+### After all agents finish: Land everything
 
-Once all agents have merged their changes internally, the orchestrating agent calls `dk_push`
+Once all sub-agents have submitted, the orchestrating agent lands all changes together.
+Use `/dkod:land` for one-command landing, or do it manually:
+
+1. **Approve** each submitted changeset (via `dk_approve`) — checks for conflicts
+2. **Merge** each approved changeset (via `dk_merge`) — AST-level semantic merge
+3. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
+
+```
+All agents done → dk_approve each → dk_merge each → dk_push(mode: "pr", branch: "feat/xyz")
+```
+
+This produces one PR with one commit per agent's changeset — zero conflicts for GitHub to
+deal with, because dkod already resolved everything via AST merge before pushing.
+
+Alternatively, the orchestrating agent calls `dk_push`
 to create a clean feature branch and optional PR on GitHub:
 
 ```

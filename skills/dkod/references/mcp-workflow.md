@@ -1,7 +1,7 @@
 # dkod MCP Workflow Reference
 
 Complete reference for the dkod MCP protocol. Each agent session follows this flow:
-connect → context → read/write → submit → verify → merge → push.
+connect → context → read/write → submit → verify → approve → merge → push.
 
 ## Table of Contents
 
@@ -10,10 +10,12 @@ connect → context → read/write → submit → verify → merge → push.
 3. [File Operations — Read and write code](#file-operations)
 4. [Submit — Send a changeset](#submit)
 5. [Verify — Run verification gates](#verify)
-6. [Merge — Land the changeset](#merge)
-7. [Push — Send to GitHub](#push)
-8. [Status — Inspect the session](#status)
-9. [Multi-Agent Example](#multi-agent-example)
+6. [Approve — Approve a changeset](#approve)
+7. [Merge — Land the changeset](#merge)
+8. [Push — Send to GitHub](#push)
+9. [Status — Inspect the session](#status)
+10. [Watch — Real-time events](#watch)
+11. [Multi-Agent Example](#multi-agent-example)
 
 ---
 
@@ -124,6 +126,25 @@ are involved, and suggested fixes. The agent can fix the issues, re-submit, and 
 
 ---
 
+## Approve
+
+**Tool:** `dk_approve`
+
+Approves a submitted changeset, transitioning it from "submitted" to "approved" state.
+
+**When to call:** After submit (and optionally after verify), before merge. The orchestrating
+agent typically approves all sub-agents' changesets after they finish.
+
+**What happens:**
+- Validates the changeset has no pending conflicts
+- Transitions the changeset state to "approved"
+- The changeset is now eligible for merge
+
+**For automated pipelines:** Use `/dkod:land` to auto-approve all submitted changesets,
+merge them, and push a PR in one step. Only stops if conflicts are detected.
+
+---
+
 ## Merge
 
 **Tool:** `dk_merge`
@@ -197,6 +218,28 @@ Inspects the current session state at any time.
 
 ---
 
+## Watch
+
+**Tool:** `dk_watch`
+
+Subscribe to real-time events from other agents working on the same codebase.
+
+**When to call:** At any time during a session to check what other agents are doing.
+Events are also automatically included in `dk_status` and other tool responses.
+
+**What it returns:**
+- File modifications by other agents
+- Conflict warnings tagged `[AFFECTS YOUR WORK]` when another agent modifies symbols you're editing
+- Merge events from other sessions
+- Session connect/disconnect events
+
+**Key behaviors:**
+- Events are buffered between calls — each `dk_watch` drains the buffer
+- Conflict warnings include specific symbol names and the conflicting agent's name
+- Watch is automatically started on `dk_connect` — call explicitly to check for updates
+
+---
+
 ## Multi-Agent Example
 
 Here's how three agents work in parallel on the same codebase:
@@ -216,20 +259,31 @@ Agent A (add validation)          Agent B (add tests)           Agent C (update 
 │   createUser, updateUser)       │                              │
 │                                 │                              │
 ├─ dk_submit                      ├─ dk_submit                   ├─ dk_submit
-├─ dk_verify ✓                    ├─ dk_verify ✓                 ├─ dk_verify ✓
-├─ dk_merge ✓                     ├─ dk_merge ✓                  ├─ dk_merge ✓
 │                                 │                              │
-│  All three merge automatically — different symbols, no conflicts.
+│  All three submit. Each sees [AFFECTS YOUR WORK] warnings from dk_watch
+│  about the other agents' changes — but since they edit different symbols,
+│  there are no true conflicts.
 ```
 
 Even if Agent A and Agent B both read and write `user-handler.ts`, their changes target
 different symbols (validation logic vs. test helpers) and merge cleanly.
 
-After all three agents complete, the orchestrator pushes to GitHub:
+After all three agents submit, the orchestrator lands everything:
 
 ```
 Orchestrator
 │
+├─ dk_approve (Agent A's changeset) ✓
+├─ dk_merge (Agent A's changeset) ✓
+├─ dk_approve (Agent B's changeset) ✓
+├─ dk_merge (Agent B's changeset) ✓  ← auto-rebases on top of A's merge
+├─ dk_approve (Agent C's changeset) ✓
+├─ dk_merge (Agent C's changeset) ✓  ← auto-rebases on top of A+B
+│
+│  All three merge automatically — different symbols, no conflicts.
+│
 ├─ dk_push(mode: "pr", branch: "feat/user-validation", title: "Add user validation")
 │  → PR created with 3 commits (one per agent)
 ```
+
+Or use `/dkod:land feat/user-validation` to do all of the above in one command.
