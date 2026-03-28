@@ -151,7 +151,7 @@ merge them, and push a PR in one step. Only stops if conflicts are detected.
 
 Merges the verified changeset into the main codebase.
 
-**When to call:** After verification passes successfully.
+**When to call:** After the changeset is approved (via `dk_approve`).
 
 **What happens:**
 - The changeset is merged using AST-level semantic merging
@@ -188,8 +188,8 @@ called by the orchestrating agent (parent), not by individual sub-agents.
 
 **Parameters:**
 - `mode` — `"branch"` (push only) or `"pr"` (push + create PR)
-- `branch_name` — target branch name (e.g., `feat/add-validation`)
-- `pr_title` — PR title (required when mode is `pr`)
+- `branch` — target branch name (e.g., `feat/add-validation`)
+- `title` — PR title (required when mode is `pr`)
 - `pr_body` — PR description (optional)
 
 **What happens:**

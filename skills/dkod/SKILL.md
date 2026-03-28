@@ -200,13 +200,6 @@ All agents done → dk_approve each → dk_merge each → dk_push(mode: "pr", br
 This produces one PR with one commit per agent's changeset — zero conflicts for GitHub to
 deal with, because dkod already resolved everything via AST merge before pushing.
 
-Alternatively, the orchestrating agent calls `dk_push`
-to create a clean feature branch and optional PR on GitHub:
-
-```
-All agents done → dk_push(mode: "pr", branch: "feat/xyz", title: "Add feature XYZ")
-```
-
 `dk_merge` is internal only — it lands changes into dkod's main branch. `dk_push` is what
 sends those changes to GitHub as a feature branch + PR with one commit per agent's changeset.
 
@@ -263,5 +256,5 @@ parts of its work while waiting.
 
 ## Protocol reference
 
-For the full dkod MCP workflow (connect, context, file operations, submit, verify, merge),
+For the full dkod MCP workflow (connect, context, file operations, submit, verify, approve, merge, push, status, watch),
 see [references/mcp-workflow.md](references/mcp-workflow.md).
