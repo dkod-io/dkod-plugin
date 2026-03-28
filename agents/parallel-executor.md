@@ -24,8 +24,17 @@ Each sub-agent you dispatch should follow this workflow:
 3. `dk_file_read` the target files
 4. `dk_file_write` with their changes
 5. `dk_submit` the changeset
-6. `dk_verify` to run checks
-7. `dk_merge` to land the changes
+6. Report back to the orchestrator — do NOT merge individually
+
+## Landing all changes
+
+After all sub-agents have submitted, use the `/dkod:land` command or run the landing pipeline manually:
+
+1. `dk_approve` each submitted changeset (auto-approves if no conflicts)
+2. `dk_merge` each approved changeset into the codebase
+3. `dk_push` with mode="pr" to create a single GitHub PR with all changes
+
+This produces one clean PR with zero conflicts — dkod already resolved everything via AST-level merge before pushing to GitHub.
 
 ## Key principles
 
@@ -33,3 +42,4 @@ Each sub-agent you dispatch should follow this workflow:
 - **Don't fear overlap.** Two agents editing the same file is fine — dkod merges at the AST level.
 - **One session per agent.** Never share sessions between agents.
 - **Report, don't guess.** If a conflict occurs, show the user the details and let them decide.
+- **Land together.** Use `/dkod:land` to approve, merge, and push all agent work as one PR.
