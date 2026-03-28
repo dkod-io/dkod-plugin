@@ -1,0 +1,22 @@
+{
+  "name": "dkod",
+  "owner": {
+    "name": "dkod",
+    "email": "hello@dkod.io"
+  },
+  "metadata": {
+    "description": "dkod — parallel agent execution with AST-level semantic merging"
+  },
+  "plugins": [
+    {
+      "name": "dkod",
+      "source": "./",
+      "description": "Parallel agent execution on shared codebases with AST-level semantic merging. Multiple agents edit the same files and functions simultaneously — dkod handles conflicts automatically.",
+      "version": "1.0.0",
+      "category": "external-integrations",
+      "tags": ["parallel", "multi-agent", "merge", "mcp"],
+      "homepage": "https://dkod.io",
+      "repository": "https://github.com/dkod-io/dkod-plugin"
+    }
+  ]
+}
