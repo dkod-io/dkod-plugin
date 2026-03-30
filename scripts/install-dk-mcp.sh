@@ -15,8 +15,8 @@ PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="$PLUGIN_DIR/bin"
 mkdir -p "$BIN_DIR"
 
-# Skip if already installed and working
-if [ -x "$BIN_DIR/dk-mcp" ] && "$BIN_DIR/dk-mcp" --version >/dev/null 2>&1; then
+# Skip if already installed
+if [ -x "$BIN_DIR/dk-mcp" ]; then
   echo "dk-mcp already installed at $BIN_DIR/dk-mcp" >&2
   exit 0
 fi
@@ -31,9 +31,27 @@ if [ -z "$VERSION" ]; then
 fi
 
 TARBALL="dk-${VERSION}-${OS}-${ARCH}.tar.gz"
+CHECKSUM_URL="https://github.com/dkod-io/dkod-engine/releases/download/${VERSION}/checksums-sha256.txt"
 URL="https://github.com/dkod-io/dkod-engine/releases/download/${VERSION}/${TARBALL}"
 
 echo "Installing dk-mcp ${VERSION} (${OS}/${ARCH})..." >&2
-curl -fsSL "$URL" | tar xz --strip-components=1 -C "$BIN_DIR" "dk-${VERSION}-${OS}-${ARCH}/dk-mcp"
+
+# Download tarball
+curl -fsSL "$URL" -o "$BIN_DIR/$TARBALL"
+
+# Verify checksum
+EXPECTED=$(curl -fsSL "$CHECKSUM_URL" | grep "$TARBALL" | awk '{print $1}')
+if [ -n "$EXPECTED" ]; then
+  ACTUAL=$(shasum -a 256 "$BIN_DIR/$TARBALL" | awk '{print $1}')
+  if [ "$ACTUAL" != "$EXPECTED" ]; then
+    rm -f "$BIN_DIR/$TARBALL"
+    echo "Checksum mismatch for $TARBALL (expected $EXPECTED, got $ACTUAL)" >&2
+    exit 1
+  fi
+fi
+
+# Extract and clean up
+tar xzf "$BIN_DIR/$TARBALL" --strip-components=1 -C "$BIN_DIR" "dk-${VERSION}-${OS}-${ARCH}/dk-mcp"
+rm -f "$BIN_DIR/$TARBALL"
 chmod +x "$BIN_DIR/dk-mcp"
 echo "dk-mcp installed to $BIN_DIR/dk-mcp" >&2
