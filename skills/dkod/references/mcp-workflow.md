@@ -133,14 +133,14 @@ are involved, and suggested fixes. The agent can fix the issues, re-submit, and 
 
 Resolves conflicts detected during submit or pre-submit checks, before approval.
 
-**When to call:** After `dk_submit` or `dk_verify` surfaces conflicts. Use this tool to
-programmatically resolve conflicts before proceeding to approve and merge.
+**When to call:** After `dk_submit`, `dk_verify`, or `dk_merge` surfaces conflicts. Use this tool to
+programmatically resolve conflicts before proceeding to (or retrying) approve and merge.
 
 **Parameters:**
 - `session_id` (optional) — Session ID
 - `resolution` (required) — One of: `proceed`, `keep_yours`, `keep_theirs`, `manual`
 - `conflict_id` — Specific conflict to resolve (required for `keep_yours`, `keep_theirs`, and `manual` modes; omit only with `proceed` to resolve all at once)
-- `content` (optional) — Custom resolution content (required for `manual` mode)
+- `content` — Custom resolution content; required when `resolution` is `manual`
 
 **Resolution modes:**
 - **proceed**: Reconnect the session on the updated base so the agent can rewrite its changes
