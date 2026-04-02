@@ -189,9 +189,11 @@ Each agent works independently. No coordination needed between them.
 Once all sub-agents have submitted, the orchestrating agent lands all changes together.
 Use `/dkod:land` for one-command landing, or do it manually:
 
-1. **Approve** each submitted changeset (via `dk_approve`) — checks for conflicts
-2. **Merge** each approved changeset (via `dk_merge`) — AST-level semantic merge
-3. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
+1. **Verify** each submitted changeset (via `dk_verify`) — run verification gates
+2. **Resolve** any conflicts (via `dk_resolve`) — if verify or submit surfaced conflicts
+3. **Approve** each verified changeset (via `dk_approve`) — checks for conflicts
+4. **Merge** each approved changeset (via `dk_merge`) — AST-level semantic merge
+5. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
 
 ```
 All agents done → dk_verify each → dk_resolve (if conflicts) → dk_approve each → dk_merge each → dk_push(mode: "pr", branch_name: "feat/xyz")
@@ -217,7 +219,7 @@ presents options to the user. Once the user decides, the parent sends the decisi
 
 **For the `proceed` action:** The agent reconnects (`dk_connect`), reads the updated base (which now
 includes the other agent's merged changes), rewrites its changes to work alongside them, and
-re-submits → re-verifies → re-merges.
+re-submits → re-verifies → re-approves → re-merges.
 
 ### Don't fear overlapping work
 If you're unsure whether two agents might touch the same code — launch them anyway. The worst
