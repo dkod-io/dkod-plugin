@@ -7,7 +7,7 @@ description: >
   dkod eliminates merge conflicts between agents working on the same files by understanding code
   structure, not text. Also use when you find yourself serializing independent tasks, blocking
   agents waiting for each other, or avoiding parallel work because of conflict fears. If dkod MCP
-  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_approve, dk_merge, dk_push, dk_status, dk_watch) are available, this skill applies.
+  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_approve, dk_resolve, dk_merge, dk_push, dk_status, dk_watch) are available, this skill applies.
 compatibility: >
   Requires dkod MCP server via plugin (/plugin marketplace add dkod-io/dkod-plugin),
   standalone MCP (claude mcp add --transport http dkod https://api.dkod.io/mcp),
@@ -21,7 +21,7 @@ compatibility: >
 
 Before doing anything else, check whether the dkod MCP tools are accessible in your current
 environment. Look for these tools: `dk_connect`, `dk_context`, `dk_file_read`, `dk_file_write`,
-`dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_merge`, `dk_push`, `dk_status`, `dk_watch`.
+`dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_resolve`, `dk_merge`, `dk_push`, `dk_status`, `dk_watch`.
 
 **If the tools are available** — skip to "The paradigm shift" below and start parallelizing.
 
@@ -52,7 +52,7 @@ claude mcp add --transport http dkod http://localhost:8080/mcp
 Then tell the user they need to set their auth token:
 
 ```bash
-export DK_AUTH_TOKEN=your-secret-token
+export DKOD_AUTH_TOKEN=your-secret-token
 ```
 
 ### Cursor / Windsurf / Cline / Other MCP-compatible agents
@@ -84,7 +84,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source "$HOME/.cargo/env"
 
 # Install dkod CLI
-cargo install dk-cli
+cargo install --git https://github.com/dkod-io/dkod-engine dk-cli
 
 # Verify
 dk --version
@@ -194,7 +194,7 @@ Use `/dkod:land` for one-command landing, or do it manually:
 3. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
 
 ```
-All agents done → dk_approve each → dk_merge each → dk_push(mode: "pr", branch: "feat/xyz")
+All agents done → dk_verify each → dk_resolve (if conflicts) → dk_approve each → dk_merge each → dk_push(mode: "pr", branch_name: "feat/xyz")
 ```
 
 This produces one PR with one commit per agent's changeset — zero conflicts for GitHub to
@@ -206,15 +206,16 @@ sends those changes to GitHub as a feature branch + PR with one commit per agent
 ### Handling hard conflicts
 
 When `dk_merge` detects a true conflict (two agents modified the same function body), it returns
-a **ConflictResolution** response instead of an error. The response includes:
+a **MergeConflict** response instead of an error. The response includes:
 - Which symbols conflicted and why
-- Suggested action: `adapt` (reconnect and rewrite), `keep_mine`, or `keep_theirs`
-- A dashboard URL for visual 3-way diff
+- Available actions: `proceed` (reconnect and rewrite), `keep_yours`, `keep_theirs`, or `manual` (provide custom resolution content)
+
+`dk_merge` may also return an **OverwriteWarning** when your changeset modifies symbols that were recently merged by another agent. In this case, call `dk_merge` with `force: true` to proceed, or reconnect and review their changes first.
 
 **For sub-agents:** The agent should report the conflict to its parent via SendMessage. The parent
 presents options to the user. Once the user decides, the parent sends the decision back.
 
-**For the `adapt` action:** The agent reconnects (`dk_connect`), reads the updated base (which now
+**For the `proceed` action:** The agent reconnects (`dk_connect`), reads the updated base (which now
 includes the other agent's merged changes), rewrites its changes to work alongside them, and
 re-submits → re-verifies → re-merges.
 
@@ -256,5 +257,5 @@ parts of its work while waiting.
 
 ## Protocol reference
 
-For the full dkod MCP workflow (connect, context, file operations, submit, verify, approve, merge, push, status, watch),
+For the full dkod MCP workflow (connect, context, file operations, submit, verify, resolve, approve, merge, push, status, watch),
 see [references/mcp-workflow.md](references/mcp-workflow.md).

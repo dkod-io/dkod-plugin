@@ -1,7 +1,7 @@
 # dkod MCP Workflow Reference
 
 Complete reference for the dkod MCP protocol. Each agent session follows this flow:
-connect → context → read/write → submit → verify → approve → merge → push.
+connect → context → read/write → submit → verify → resolve (if conflicts) → approve → merge → push.
 
 ## Table of Contents
 
@@ -10,12 +10,13 @@ connect → context → read/write → submit → verify → approve → merge �
 3. [File Operations — Read and write code](#file-operations)
 4. [Submit — Send a changeset](#submit)
 5. [Verify — Run verification gates](#verify)
-6. [Approve — Approve a changeset](#approve)
-7. [Merge — Land the changeset](#merge)
-8. [Push — Send to GitHub](#push)
-9. [Status — Inspect the session](#status)
-10. [Watch — Real-time events](#watch)
-11. [Multi-Agent Example](#multi-agent-example)
+6. [Resolve — Resolve conflicts](#resolve)
+7. [Approve — Approve a changeset](#approve)
+8. [Merge — Land the changeset](#merge)
+9. [Push — Send to GitHub](#push)
+10. [Status — Inspect the session](#status)
+11. [Watch — Real-time events](#watch)
+12. [Multi-Agent Example](#multi-agent-example)
 
 ---
 
@@ -126,13 +127,36 @@ are involved, and suggested fixes. The agent can fix the issues, re-submit, and 
 
 ---
 
+## Resolve
+
+**Tool:** `dk_resolve`
+
+Resolves conflicts detected during submit or pre-submit checks, before approval.
+
+**When to call:** After `dk_submit` or `dk_verify` surfaces conflicts. Use this tool to
+programmatically resolve conflicts before proceeding to approve and merge.
+
+**Parameters:**
+- `session_id` (optional) — Session ID
+- `resolution` (required) — One of: `proceed`, `keep_yours`, `keep_theirs`, `manual`
+- `conflict_id` — Specific conflict to resolve (required for `keep_yours`, `keep_theirs`, and `manual` modes; omit only with `proceed` to resolve all at once)
+- `content` (optional) — Custom resolution content (required for `manual` mode)
+
+**Resolution modes:**
+- **proceed**: Reconnect the session on the updated base so the agent can rewrite its changes
+- **keep_yours**: Accept this agent's version, discarding the other agent's conflicting changes
+- **keep_theirs**: Accept the other agent's version, discarding this agent's conflicting changes
+- **manual**: Apply custom resolution content provided in the `content` parameter
+
+---
+
 ## Approve
 
 **Tool:** `dk_approve`
 
 Approves a submitted changeset, transitioning it from "submitted" to "approved" state.
 
-**When to call:** After submit (and optionally after verify), before merge. The orchestrating
+**When to call:** After submit, verify, and resolve (if needed), before merge. The orchestrating
 agent typically approves all sub-agents' changesets after they finish.
 
 **What happens:**
@@ -149,9 +173,14 @@ merge them, and push a PR in one step. Only stops if conflicts are detected.
 
 **Tool:** `dk_merge`
 
-Merges the verified changeset into the main codebase.
+Merges an approved changeset into the main codebase.
 
 **When to call:** After the changeset is approved (via `dk_approve`).
+
+**Parameters:**
+- `session_id` (optional) — Session ID
+- `message` (optional) — Commit message for the merge
+- `force` (optional, default `false`) — Bypass the recency guard after acknowledging an overwrite warning
 
 **What happens:**
 - The changeset is merged using AST-level semantic merging
@@ -163,17 +192,13 @@ Merges the verified changeset into the main codebase.
 Other agents' auto-rebase will pick up these changes transparently.
 
 **On conflict:** If the merge detects a true semantic conflict, `dk_merge` returns a
-`ConflictResolution` response (not an error) containing:
+`MergeConflict` response (not an error) containing:
 - `conflicts` — list of conflicting symbols with file paths, your agent, their agent, descriptions
-- `suggested_action` — typically `adapt` (reconnect and rewrite on updated base)
-- `available_actions` — `adapt`, `keep_mine`, `keep_theirs`
+- `available_actions` — `proceed`, `keep_yours`, `keep_theirs`, `manual`
 
-The agent should report the conflict to its parent or the user. Resolution options:
-- **adapt** (recommended): reconnect via `dk_connect`, read the updated code, rewrite changes, re-submit → re-verify → re-merge
-- **keep_mine**: force-merge, discarding the other agent's conflicting changes
-- **keep_theirs**: discard this agent's changeset
+Use `dk_resolve` to resolve the conflict, then retry `dk_approve` → `dk_merge`.
 
-Conflicts can also be resolved via the dashboard's visual 3-way diff at the URL returned in the response.
+**On overwrite warning:** If the merge detects your changeset modifies symbols recently merged by another agent, `dk_merge` returns an `OverwriteWarning`. Call `dk_merge` again with `force: true` to proceed, or reconnect and review their changes first.
 
 ---
 
@@ -188,8 +213,8 @@ called by the orchestrating agent (parent), not by individual sub-agents.
 
 **Parameters:**
 - `mode` — `"branch"` (push only) or `"pr"` (push + create PR)
-- `branch` — target branch name (e.g., `feat/add-validation`)
-- `title` — PR title (required when mode is `pr`)
+- `branch_name` — target branch name (e.g., `feat/add-validation`)
+- `pr_title` — PR title (required when mode is `pr`)
 - `pr_body` — PR description (optional)
 
 **What happens:**
@@ -237,6 +262,7 @@ Events are also automatically included in `dk_status` and other tool responses.
 - Events are buffered between calls — each `dk_watch` drains the buffer
 - Conflict warnings include specific symbol names and the conflicting agent's name
 - Watch is automatically started on `dk_connect` — call explicitly to check for updates
+- Optional `filter` parameter: `"all"` (default), `"symbols"`, or `"files"` to narrow events
 
 ---
 
@@ -282,7 +308,7 @@ Orchestrator
 │
 │  All three merge automatically — different symbols, no conflicts.
 │
-├─ dk_push(mode: "pr", branch: "feat/user-validation", title: "Add user validation")
+├─ dk_push(mode: "pr", branch_name: "feat/user-validation", pr_title: "Add user validation")
 │  → PR created with 3 commits (one per agent)
 ```
 
