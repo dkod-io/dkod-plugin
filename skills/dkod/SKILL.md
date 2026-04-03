@@ -7,7 +7,7 @@ description: >
   dkod eliminates merge conflicts between agents working on the same files by understanding code
   structure, not text. Also use when you find yourself serializing independent tasks, blocking
   agents waiting for each other, or avoiding parallel work because of conflict fears. If dkod MCP
-  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_approve, dk_merge, dk_push, dk_status, dk_watch) are available, this skill applies.
+  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_approve, dk_merge, dk_push, dk_resolve, dk_close, dk_status, dk_watch) are available, this skill applies.
 compatibility: >
   Requires dkod MCP server via plugin (/plugin marketplace add dkod-io/dkod-plugin),
   standalone MCP (claude mcp add --transport http dkod https://api.dkod.io/mcp),
@@ -21,7 +21,8 @@ compatibility: >
 
 Before doing anything else, check whether the dkod MCP tools are accessible in your current
 environment. Look for these tools: `dk_connect`, `dk_context`, `dk_file_read`, `dk_file_write`,
-`dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_merge`, `dk_push`, `dk_status`, `dk_watch`.
+`dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_merge`, `dk_push`, `dk_resolve`,
+`dk_close`, `dk_status`, `dk_watch`.
 
 **If the tools are available** — skip to "The paradigm shift" below and start parallelizing.
 
