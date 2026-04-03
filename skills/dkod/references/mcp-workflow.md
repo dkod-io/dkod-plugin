@@ -152,9 +152,14 @@ merge them, and push a PR in one step. Only stops if conflicts are detected.
 
 **Tool:** `dk_merge`
 
-Merges the verified changeset into the main codebase.
+Merges an approved changeset into the main codebase.
 
 **When to call:** After the changeset is approved (via `dk_approve`).
+
+**Parameters:**
+- `session_id` (optional) — Session ID
+- `message` (optional) — Commit message for the merge
+- `force` (optional, default `false`) — Bypass the recency guard after acknowledging an overwrite warning
 
 **What happens:**
 - The changeset is merged using AST-level semantic merging
@@ -166,15 +171,18 @@ Merges the verified changeset into the main codebase.
 Other agents' auto-rebase will pick up these changes transparently.
 
 **On conflict:** If the merge detects a true semantic conflict, `dk_merge` returns a
-`ConflictResolution` response (not an error) containing:
+`MergeConflict` response (not an error) containing:
 - `conflicts` — list of conflicting symbols with file paths, your agent, their agent, descriptions
-- `suggested_action` — typically `adapt` (reconnect and rewrite on updated base)
-- `available_actions` — `adapt`, `keep_mine`, `keep_theirs`
+- `available_actions` — `proceed`, `keep_yours`, `keep_theirs`
+
+`dk_merge` may also return an **OverwriteWarning** when your changeset modifies symbols that
+were recently merged by another agent. Call `dk_merge` with `force: true` to proceed, or
+reconnect and review their changes first.
 
 The agent should report the conflict to its parent or the user. Resolution options:
-- **adapt** (recommended): reconnect via `dk_connect`, read the updated code, rewrite changes, re-submit → re-verify → re-merge
-- **keep_mine**: force-merge, discarding the other agent's conflicting changes
-- **keep_theirs**: discard this agent's changeset
+- **proceed** (recommended): use `dk_resolve` to clear conflicts, then retry merge
+- **keep_yours**: keep this agent's version via `dk_resolve(resolution: "keep_yours", conflict_id: "...")`
+- **keep_theirs**: keep the other agent's version via `dk_resolve(resolution: "keep_theirs", conflict_id: "...")`
 
 Conflicts can also be resolved via the dashboard's visual 3-way diff at the URL returned in the response.
 
@@ -246,8 +254,8 @@ called by the orchestrating agent (parent), not by individual sub-agents.
 
 **Parameters:**
 - `mode` — `"branch"` (push only) or `"pr"` (push + create PR)
-- `branch` — target branch name (e.g., `feat/add-validation`)
-- `title` — PR title (required when mode is `pr`)
+- `branch_name` — target branch name (e.g., `feat/add-validation`)
+- `pr_title` — PR title (required when mode is `pr`)
 - `pr_body` — PR description (optional)
 
 **What happens:**
@@ -340,7 +348,7 @@ Orchestrator
 │
 │  All three merge automatically — different symbols, no conflicts.
 │
-├─ dk_push(mode: "pr", branch: "feat/user-validation", title: "Add user validation")
+├─ dk_push(mode: "pr", branch_name: "feat/user-validation", pr_title: "Add user validation")
 │  → PR created with 3 commits (one per agent)
 ```
 

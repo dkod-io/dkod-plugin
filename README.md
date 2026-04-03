@@ -47,7 +47,7 @@ On first use, a browser window opens for GitHub OAuth. After that, dkod tools ar
 
 | Component | What you get |
 |-----------|-------------|
-| **MCP Server** | 12 tools — `dk_connect`, `dk_context`, `dk_file_read`, `dk_file_write`, `dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_merge`, `dk_push`, `dk_status`, `dk_watch` |
+| **MCP Server** | 14 tools — `dk_connect`, `dk_context`, `dk_file_read`, `dk_file_write`, `dk_file_list`, `dk_submit`, `dk_verify`, `dk_resolve`, `dk_approve`, `dk_merge`, `dk_push`, `dk_close`, `dk_status`, `dk_watch` |
 | **Skill** | Teaches agents to decompose work by symbol, launch concurrent sub-agents, handle conflicts |
 | **Agent** | `parallel-executor` — orchestrates multi-agent workflows with automatic landing |
 | **Commands** | `/dkod:status` `/dkod:push` `/dkod:watch` `/dkod:land` |
