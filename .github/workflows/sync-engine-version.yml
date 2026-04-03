@@ -21,8 +21,11 @@ jobs:
 
       - name: Get latest engine version
         id: engine
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RAW=$(curl -fsSL "https://api.github.com/repos/dkod-io/dkod-engine/releases/latest" \
+          RAW=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/dkod-io/dkod-engine/releases/latest" \
             | jq -r '.tag_name // empty')
           if [ -z "$RAW" ]; then
             echo "::error::Failed to fetch latest engine release tag"
