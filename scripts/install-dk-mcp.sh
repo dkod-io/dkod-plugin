@@ -43,16 +43,14 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-# Record that we checked
-date +%s > "$CHECK_FILE"
-
-# If already on latest version, skip.
+# If already on latest version, record check and skip.
 INSTALLED_VERSION=""
 if [ -f "$VERSION_FILE" ]; then
   INSTALLED_VERSION=$(cat "$VERSION_FILE" 2>/dev/null || true)
 fi
 
 if [ -x "$BIN_DIR/dk-mcp" ] && [ "$INSTALLED_VERSION" = "$VERSION" ]; then
+  date +%s > "$CHECK_FILE"
   exit 0
 fi
 
@@ -70,15 +68,19 @@ fi
 # Download tarball
 curl -fsSL "$URL" -o "$BIN_DIR/$TARBALL"
 
-# Verify checksum
-EXPECTED=$(curl -fsSL "$CHECKSUM_URL" | grep "$TARBALL" | awk '{print $1}')
-if [ -n "$EXPECTED" ]; then
-  ACTUAL=$(shasum -a 256 "$BIN_DIR/$TARBALL" | awk '{print $1}')
-  if [ "$ACTUAL" != "$EXPECTED" ]; then
-    rm -f "$BIN_DIR/$TARBALL"
-    echo "Checksum mismatch for $TARBALL (expected $EXPECTED, got $ACTUAL)" >&2
-    exit 1
-  fi
+# Verify checksum (mandatory — fail if missing or mismatched)
+CHECKSUMS=$(curl -fsSL "$CHECKSUM_URL")
+EXPECTED=$(echo "$CHECKSUMS" | grep "$TARBALL" | awk '{print $1}')
+if [ -z "$EXPECTED" ]; then
+  rm -f "$BIN_DIR/$TARBALL"
+  echo "No checksum found for $TARBALL in release checksums" >&2
+  exit 1
+fi
+ACTUAL=$(shasum -a 256 "$BIN_DIR/$TARBALL" | awk '{print $1}')
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  rm -f "$BIN_DIR/$TARBALL"
+  echo "Checksum mismatch for $TARBALL (expected $EXPECTED, got $ACTUAL)" >&2
+  exit 1
 fi
 
 # Extract and clean up
@@ -86,4 +88,5 @@ tar xzf "$BIN_DIR/$TARBALL" --strip-components=1 -C "$BIN_DIR" "dk-${VERSION}-${
 rm -f "$BIN_DIR/$TARBALL"
 chmod +x "$BIN_DIR/dk-mcp"
 echo "$VERSION" > "$VERSION_FILE"
+date +%s > "$CHECK_FILE"
 echo "dk-mcp ${VERSION} ready" >&2
