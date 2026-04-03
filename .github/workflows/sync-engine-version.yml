@@ -1,0 +1,56 @@
+name: Sync engine version
+
+on:
+  # Triggered by dkod-engine release via repository_dispatch
+  repository_dispatch:
+    types: [engine-release]
+  # Manual trigger
+  workflow_dispatch:
+  # Check daily in case the dispatch was missed
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest engine version
+        id: engine
+        run: |
+          VERSION=$(curl -fsSL "https://api.github.com/repos/dkod-io/dkod-engine/releases/latest" \
+            | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Latest engine version: $VERSION"
+
+      - name: Get current plugin version
+        id: current
+        run: |
+          CURRENT=$(grep '"version"' .claude-plugin/plugin.json | head -1 | sed 's/.*"\([0-9][^"]*\)".*/\1/')
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "Current plugin version: $CURRENT"
+
+      - name: Update version if changed
+        if: steps.engine.outputs.version != steps.current.outputs.version
+        env:
+          NEW_VERSION: ${{ steps.engine.outputs.version }}
+          OLD_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          sed -i "s/\"$OLD_VERSION\"/\"$NEW_VERSION\"/g" .claude-plugin/plugin.json
+          sed -i "s/\"$OLD_VERSION\"/\"$NEW_VERSION\"/g" .claude-plugin/marketplace.json
+          echo "Updated $OLD_VERSION → $NEW_VERSION"
+
+      - name: Commit and push
+        if: steps.engine.outputs.version != steps.current.outputs.version
+        env:
+          NEW_VERSION: ${{ steps.engine.outputs.version }}
+        run: |
+          git config user.name "Haim Ari"
+          git config user.email "haimari1@gmail.com"
+          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
+          git commit -m "chore: bump version to $NEW_VERSION"
+          git push
