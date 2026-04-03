@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: '0 6 * * *'
 
+concurrency:
+  group: sync-engine-version
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -54,7 +58,7 @@ jobs:
         run: |
           # Use jq to update only the "version" field — no broad sed replacement
           jq --arg v "$NEW_VERSION" '.version = $v' .claude-plugin/plugin.json > tmp.json && mv tmp.json .claude-plugin/plugin.json
-          jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+          jq --arg v "$NEW_VERSION" '.plugins = [.plugins[] | .version = $v]' .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
           echo "Updated → $NEW_VERSION"
 
       - name: Commit and push
