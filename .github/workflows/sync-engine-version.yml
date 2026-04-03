@@ -22,15 +22,25 @@ jobs:
       - name: Get latest engine version
         id: engine
         run: |
-          VERSION=$(curl -fsSL "https://api.github.com/repos/dkod-io/dkod-engine/releases/latest" \
-            | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+          RAW=$(curl -fsSL "https://api.github.com/repos/dkod-io/dkod-engine/releases/latest" \
+            | jq -r '.tag_name // empty')
+          if [ -z "$RAW" ]; then
+            echo "::error::Failed to fetch latest engine release tag"
+            exit 1
+          fi
+          # Strip leading 'v' prefix (engine tags: v0.2.65 → 0.2.65)
+          VERSION="${RAW#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Latest engine version: $VERSION"
 
       - name: Get current plugin version
         id: current
         run: |
-          CURRENT=$(grep '"version"' .claude-plugin/plugin.json | head -1 | sed 's/.*"\([0-9][^"]*\)".*/\1/')
+          CURRENT=$(jq -r '.version' .claude-plugin/plugin.json)
+          if [ -z "$CURRENT" ] || [ "$CURRENT" = "null" ]; then
+            echo "::error::Could not read version from plugin.json"
+            exit 1
+          fi
           echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
           echo "Current plugin version: $CURRENT"
 
@@ -38,11 +48,11 @@ jobs:
         if: steps.engine.outputs.version != steps.current.outputs.version
         env:
           NEW_VERSION: ${{ steps.engine.outputs.version }}
-          OLD_VERSION: ${{ steps.current.outputs.version }}
         run: |
-          sed -i "s/\"$OLD_VERSION\"/\"$NEW_VERSION\"/g" .claude-plugin/plugin.json
-          sed -i "s/\"$OLD_VERSION\"/\"$NEW_VERSION\"/g" .claude-plugin/marketplace.json
-          echo "Updated $OLD_VERSION → $NEW_VERSION"
+          # Use jq to update only the "version" field — no broad sed replacement
+          jq --arg v "$NEW_VERSION" '.version = $v' .claude-plugin/plugin.json > tmp.json && mv tmp.json .claude-plugin/plugin.json
+          jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+          echo "Updated → $NEW_VERSION"
 
       - name: Commit and push
         if: steps.engine.outputs.version != steps.current.outputs.version
