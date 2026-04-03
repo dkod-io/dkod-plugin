@@ -2,7 +2,7 @@
   "mcpServers": {
     "dkod": {
       "command": "bash",
-      "args": ["-c", "PLUGIN_DIR=\"$HOME/.claude/plugins/marketplaces/dkod\"; [ -x \"$PLUGIN_DIR/bin/dk-mcp\" ] || bash \"$PLUGIN_DIR/scripts/install-dk-mcp.sh\"; exec \"$PLUGIN_DIR/bin/dk-mcp\""]
+      "args": ["-c", "PLUGIN_DIR=\"$HOME/.claude/plugins/marketplaces/dkod\"; bash \"$PLUGIN_DIR/scripts/install-dk-mcp.sh\"; exec \"$PLUGIN_DIR/bin/dk-mcp\""]
     }
   }
 }

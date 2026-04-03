@@ -2,6 +2,7 @@
 
 Complete reference for the dkod MCP protocol. Each agent session follows this flow:
 connect → context → read/write → submit → verify → approve → merge → push.
+Use resolve for conflicts and close to abandon stuck changesets.
 
 ## Table of Contents
 
@@ -12,10 +13,12 @@ connect → context → read/write → submit → verify → approve → merge �
 5. [Verify — Run verification gates](#verify)
 6. [Approve — Approve a changeset](#approve)
 7. [Merge — Land the changeset](#merge)
-8. [Push — Send to GitHub](#push)
-9. [Status — Inspect the session](#status)
-10. [Watch — Real-time events](#watch)
-11. [Multi-Agent Example](#multi-agent-example)
+8. [Resolve — Handle conflicts](#resolve)
+9. [Close — Abandon a changeset](#close)
+10. [Push — Send to GitHub](#push)
+11. [Status — Inspect the session](#status)
+12. [Watch — Real-time events](#watch)
+13. [Multi-Agent Example](#multi-agent-example)
 
 ---
 
@@ -174,6 +177,61 @@ The agent should report the conflict to its parent or the user. Resolution optio
 - **keep_theirs**: discard this agent's changeset
 
 Conflicts can also be resolved via the dashboard's visual 3-way diff at the URL returned in the response.
+
+---
+
+## Resolve
+
+**Tool:** `dk_resolve`
+
+Resolves conflicts on a changeset that is blocked in a `conflicted:*` state.
+
+**When to call:** When `dk_submit` or `dk_merge` returns a conflict, or when the changeset
+is stuck in a conflicted state. Use this instead of abandoning the changeset and starting over.
+
+**Resolution modes:**
+- `proceed` — accept all your changes and unblock merge (resolves all pending conflicts at once)
+- `keep_yours` — keep your version for a specific conflict (requires `conflict_id`)
+- `keep_theirs` — keep the other agent's version for a specific conflict (requires `conflict_id`)
+- `manual` — provide custom resolved content (requires `conflict_id` and `content`)
+
+**Parameters:**
+- `resolution` — one of `"proceed"`, `"keep_yours"`, `"keep_theirs"`, `"manual"`
+- `conflict_id` — required for per-symbol resolution (`keep_yours`, `keep_theirs`, `manual`)
+- `content` — custom resolution content (required for `manual` mode)
+
+**What happens:**
+- Transitions conflicting symbols to resolved state
+- Updates the changeset state (back to `submitted` or `approved` if all conflicts resolved)
+- Returns count of conflicts resolved and remaining
+
+**Typical flow:** `dk_submit` → conflict → `dk_resolve(resolution: "proceed")` → `dk_approve` → `dk_merge`
+
+---
+
+## Close
+
+**Tool:** `dk_close`
+
+Closes the current session and abandons any pending changeset.
+
+**When to call:** When a changeset is stuck, no longer needed, or the agent wants to start
+fresh. This is the escape hatch for any non-terminal changeset state.
+
+**What happens:**
+1. Closes the changeset (state → `closed`)
+2. Resolves all pending symbol conflicts
+3. Releases all symbol claims held by this session
+4. Destroys the engine session and workspace
+5. Cleans up all local resources (NATS tasks, watch streams)
+
+**After close:** The session is gone. Call `dk_connect` to start a new session.
+
+**Key behaviors:**
+- Safe to call on any non-terminal changeset (open, submitted, approved, conflicted, etc.)
+- If the changeset is already merged or closed, the session is still destroyed
+- Other agents' work is unaffected — only this agent's pending changes are discarded
+- Symbol claims are released immediately, unblocking other agents who were waiting
 
 ---
 
