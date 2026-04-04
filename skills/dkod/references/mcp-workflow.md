@@ -80,6 +80,11 @@ otherwise falls through to the shared base. Zero cost for unmodified files.
 **`dk_file_write`** — Writes a file into the session overlay only. The change is invisible to
 all other sessions and to the main branch until submitted and merged.
 
+**Conflict warnings:** If `dk_file_write` returns `conflict_warnings`, another agent has already
+merged changes to the same symbols. The warning includes the other agent's version of the code.
+Stop writing, incorporate their changes into your version, and re-write the file. See the
+"Handling file write conflicts" section in the skill guide.
+
 **`dk_file_list`** — Lists files in the workspace, including any new files created in the overlay.
 
 **Key behaviors:**
