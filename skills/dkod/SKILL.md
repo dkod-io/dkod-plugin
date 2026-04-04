@@ -231,6 +231,20 @@ case is a true semantic conflict, which dkod will surface clearly with:
 
 This is far better than the alternative: serializing work "just in case" and wasting time.
 
+### Handling file write conflicts
+
+After every `dk_file_write`, check the response for `conflict_warnings`. If present, you MUST:
+
+1. **Stop** — do not write any more files
+2. **Read the merged version** from the warning message (it includes the other agent's code)
+3. **Rewrite your file** to incorporate both your changes and the merged version
+4. **Re-call `dk_file_write`** with the combined content
+5. **Verify** the response has no `conflict_warnings`, then continue with remaining files
+
+Do NOT ignore conflict warnings and proceed to `dk_submit`. The submit will include an
+advisory conflict block, and `dk_merge` will reject the changeset — forcing an expensive
+close → reconnect → rewrite cycle that wastes all your work.
+
 ## What's safe and what conflicts
 
 | Scenario | Result |
