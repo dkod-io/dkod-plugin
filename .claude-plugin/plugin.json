@@ -1,6 +1,6 @@
 {
   "name": "dkod",
-  "version": "0.2.65",
+  "version": "0.2.66",
   "description": "Parallel agent execution on shared codebases with AST-level semantic merging. Multiple agents edit the same files and functions simultaneously — dkod handles conflicts automatically.",
   "author": {
     "name": "dkod",
