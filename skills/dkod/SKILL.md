@@ -192,12 +192,13 @@ Use `/dkod:land` for one-command landing, or do it manually:
 
 1. **Verify** each submitted changeset (via `dk_verify`) — run verification gates
 2. **Resolve** any conflicts (via `dk_resolve`) — if verify or submit surfaced conflicts
-3. **Approve** each verified changeset (via `dk_approve`) — checks for conflicts
-4. **Merge** each approved changeset (via `dk_merge`) — AST-level semantic merge
-5. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
+3. **Review** each changeset (via `dk_review`) — check score and findings
+4. **Approve** each reviewed changeset (via `dk_approve`) — checks for conflicts
+5. **Merge** each approved changeset (via `dk_merge`) — AST-level semantic merge
+6. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
 
 ```
-All agents done → dk_verify each → dk_resolve (if conflicts) → dk_approve each → dk_merge each → dk_push(mode: "pr", branch_name: "feat/xyz")
+All agents done → dk_verify each → dk_resolve (if conflicts) → dk_review each → dk_approve each → dk_merge each → dk_push(mode: "pr", branch_name: "feat/xyz")
 ```
 
 This produces one PR with one commit per agent's changeset — zero conflicts for GitHub to
