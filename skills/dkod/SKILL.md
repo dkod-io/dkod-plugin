@@ -74,33 +74,14 @@ For Cursor: `.cursor/mcp.json`
 For Windsurf: `~/.codeium/windsurf/mcp_config.json`
 For Cline: VS Code settings under Cline MCP servers
 
-### Optional: Install the dkod CLI
-
-The MCP server is sufficient for parallel agent work, but users may also want the CLI for
-direct terminal usage. If they ask, guide them through:
-
-```bash
-# Install Rust (if not already installed)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-
-# Install dkod CLI
-cargo install --git https://github.com/dkod-io/dkod-engine dk-cli
-
-# Verify
-dk --version
-
-# Authenticate (cloud only — opens browser for GitHub OAuth)
-dk login
-
-# Initialize the project (run from the git repo root)
-dk init
-```
-
 ### After installation
 
 Once the MCP server is configured, restart the agent session (or reload MCP servers if the
 agent supports it), then proceed with the task using the parallel execution approach below.
+
+**No CLI needed.** The plugin provides everything through MCP tools (`dk_connect`, `dk_review`,
+etc.). There is no separate `dk login` or `dk init` step — authentication is handled
+automatically by the MCP server.
 
 ---
 
