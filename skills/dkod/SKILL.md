@@ -219,7 +219,7 @@ Call `dk_review` for full findings with file paths, line numbers, severity, and 
 
 If the user has configured an LLM API key (Settings → AI Code Review), **deep review** runs asynchronously after submit. Results arrive via `dk_watch` as a `changeset.review.completed` event.
 
-**Review is advisory** — it never blocks merge. Use the score and findings to improve code quality before landing.
+**Review does not block `dk_merge` itself**, but the `/dkod:land` pipeline uses the score as a gate: score < 3 or `"error"` findings will halt approval (see `land.md`). Use the score and findings to improve code quality before landing.
 
 ### Handling hard conflicts
 

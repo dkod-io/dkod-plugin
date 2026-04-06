@@ -370,10 +370,13 @@ After all three agents submit, the orchestrator lands everything:
 ```
 Orchestrator
 │
+├─ dk_review (Agent A's changeset) → score 5, no errors ✓
 ├─ dk_approve (Agent A's changeset) ✓
 ├─ dk_merge (Agent A's changeset) ✓
+├─ dk_review (Agent B's changeset) → score 4, no errors ✓
 ├─ dk_approve (Agent B's changeset) ✓
 ├─ dk_merge (Agent B's changeset) ✓  ← auto-rebases on top of A's merge
+├─ dk_review (Agent C's changeset) → score 5, no errors ✓
 ├─ dk_approve (Agent C's changeset) ✓
 ├─ dk_merge (Agent C's changeset) ✓  ← auto-rebases on top of A+B
 │
