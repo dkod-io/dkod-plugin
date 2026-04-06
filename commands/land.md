@@ -15,6 +15,12 @@ Run the full landing pipeline for all submitted changesets in the current repo.
    b. Call `dk_merge` to merge it into the codebase
 3. After all changesets are merged, call `dk_push` with mode="pr" to create a GitHub PR
 
+## Review check (between submit and approve)
+
+5. **Review** — `dk_review` — check code review score and findings
+   - Score >= 3 and no "error" findings -> proceed to approve
+   - Score < 3 or "error" findings -> report findings to user
+
 ## Conflict handling
 
 - If `dk_merge` returns a conflict, STOP and report the conflict to the user with full details

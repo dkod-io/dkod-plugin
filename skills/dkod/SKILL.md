@@ -7,7 +7,7 @@ description: >
   dkod eliminates merge conflicts between agents working on the same files by understanding code
   structure, not text. Also use when you find yourself serializing independent tasks, blocking
   agents waiting for each other, or avoiding parallel work because of conflict fears. If dkod MCP
-  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_approve, dk_merge, dk_push, dk_resolve, dk_close, dk_status, dk_watch) are available, this skill applies.
+  tools (dk_connect, dk_context, dk_file_read, dk_file_write, dk_file_list, dk_submit, dk_verify, dk_review, dk_approve, dk_merge, dk_push, dk_resolve, dk_close, dk_status, dk_watch) are available, this skill applies.
 compatibility: >
   Requires dkod MCP server via plugin (/plugin marketplace add dkod-io/dkod-plugin),
   standalone MCP (claude mcp add --transport http dkod https://api.dkod.io/mcp),
@@ -21,8 +21,8 @@ compatibility: >
 
 Before doing anything else, check whether the dkod MCP tools are accessible in your current
 environment. Look for these tools: `dk_connect`, `dk_context`, `dk_file_read`, `dk_file_write`,
-`dk_file_list`, `dk_submit`, `dk_verify`, `dk_approve`, `dk_merge`, `dk_push`, `dk_resolve`,
-`dk_close`, `dk_status`, `dk_watch`.
+`dk_file_list`, `dk_submit`, `dk_verify`, `dk_review`, `dk_approve`, `dk_merge`, `dk_push`,
+`dk_resolve`, `dk_close`, `dk_status`, `dk_watch`.
 
 **If the tools are available** — skip to "The paradigm shift" below and start parallelizing.
 
@@ -206,6 +206,20 @@ deal with, because dkod already resolved everything via AST merge before pushing
 `dk_merge` is internal only — it lands changes into dkod's main branch. `dk_push` is what
 sends those changes to GitHub as a feature branch + PR with one commit per agent's changeset.
 
+### Code Review
+
+After `dk_submit`, the platform runs **local code review** automatically. The submit response includes a `review_summary` with score (1-5) and findings count.
+
+- **Score 5** — no issues found
+- **Score 3-4** — warnings (test gaps, conventions)
+- **Score 1-2** — errors (security, logic issues)
+
+Call `dk_review` for full findings with file paths, line numbers, severity, and fix suggestions.
+
+If the user has configured an LLM API key (Settings → AI Code Review), **deep review** runs asynchronously after submit. Results arrive via `dk_watch` as a `changeset.review.completed` event.
+
+**Review is advisory** — it never blocks merge. Use the score and findings to improve code quality before landing.
+
 ### Handling hard conflicts
 
 When `dk_merge` detects a true conflict (two agents modified the same function body), it returns
@@ -274,5 +288,5 @@ parts of its work while waiting.
 
 ## Protocol reference
 
-For the full dkod MCP workflow (connect, context, file operations, submit, verify, resolve, close, approve, merge, push, status, watch),
+For the full dkod MCP workflow (connect, context, file operations, submit, verify, review, resolve, close, approve, merge, push, status, watch),
 see [references/mcp-workflow.md](references/mcp-workflow.md).
