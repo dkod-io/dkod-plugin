@@ -190,15 +190,21 @@ Each agent works independently. No coordination needed between them.
 Once all sub-agents have submitted, the orchestrating agent lands all changes together.
 Use `/dkod:land` for one-command landing, or do it manually:
 
-1. **Verify** each submitted changeset (via `dk_verify`) — run verification gates
-2. **Resolve** any conflicts (via `dk_resolve`) — if verify or submit surfaced conflicts
-3. **Review** each changeset (via `dk_review`) — check score and findings
-4. **Approve** each reviewed changeset (via `dk_approve`) — checks for conflicts
-5. **Merge** each approved changeset (via `dk_merge`) — AST-level semantic merge
-6. **Push** all merged changes to GitHub (via `dk_push`) — one clean PR
+For each submitted changeset:
+
+1. **Verify** (via `dk_verify`) — run verification gates
+2. **Resolve** (via `dk_resolve`) — if verify or submit surfaced conflicts
+3. **Review** (via `dk_review`) — check score and findings. Score < 3 or "error" findings? Fix before proceeding.
+4. **Approve** (via `dk_approve`) — only if review passed
+5. **Merge** (via `dk_merge`) — AST-level semantic merge
+
+After all changesets merged:
+
+6. **Push** (via `dk_push`) — one clean PR
 
 ```
-All agents done → dk_verify each → dk_resolve (if conflicts) → dk_review each → dk_approve each → dk_merge each → dk_push(mode: "pr", branch_name: "feat/xyz")
+For each changeset: dk_verify → dk_resolve (if conflicts) → dk_review (score < 3? fix first) → dk_approve → dk_merge
+After all merged: dk_push(mode: "pr", branch_name: "feat/xyz")
 ```
 
 This produces one PR with one commit per agent's changeset — zero conflicts for GitHub to
