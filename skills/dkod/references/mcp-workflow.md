@@ -1,7 +1,7 @@
 # dkod MCP Workflow Reference
 
 Complete reference for the dkod MCP protocol. Each agent session follows this flow:
-connect → context → read/write → submit → verify → approve → merge → push.
+connect → context → read/write → submit → verify → review → approve → merge → push.
 Use resolve for conflicts and close to abandon stuck changesets.
 
 ## Table of Contents
@@ -11,14 +11,15 @@ Use resolve for conflicts and close to abandon stuck changesets.
 3. [File Operations — Read and write code](#file-operations)
 4. [Submit — Send a changeset](#submit)
 5. [Verify — Run verification gates](#verify)
-6. [Approve — Approve a changeset](#approve)
-7. [Merge — Land the changeset](#merge)
-8. [Resolve — Handle conflicts](#resolve)
-9. [Close — Abandon a changeset](#close)
-10. [Push — Send to GitHub](#push)
-11. [Status — Inspect the session](#status)
-12. [Watch — Real-time events](#watch)
-13. [Multi-Agent Example](#multi-agent-example)
+6. [Review — Code review results](#review)
+7. [Approve — Approve a changeset](#approve)
+8. [Merge — Land the changeset](#merge)
+9. [Resolve — Handle conflicts](#resolve)
+10. [Close — Abandon a changeset](#close)
+11. [Push — Send to GitHub](#push)
+12. [Status — Inspect the session](#status)
+13. [Watch — Real-time events](#watch)
+14. [Multi-Agent Example](#multi-agent-example)
 
 ---
 
@@ -113,6 +114,9 @@ Sends the session's changeset (all file modifications) for verification and merg
 - Structured rationale (what was changed and why)
 - Semantic metadata (which symbols were modified, added, or removed)
 
+**Response includes `review_summary`:** After submit, the response contains a `review_summary`
+with a score (1-5) and findings count from the local code review. Call `dk_review` for full details.
+
 ---
 
 ## Verify
@@ -134,6 +138,28 @@ are involved, and suggested fixes. The agent can fix the issues, re-submit, and 
 
 ---
 
+## Review
+
+**Tool:** `dk_review`
+
+Get code review results for a changeset.
+
+**Parameters:**
+- `session_id` (optional) — required when multiple sessions active
+- `changeset_id` (optional) — defaults to current session's changeset
+
+**Returns:** Review results grouped by tier (local, deep), each with:
+- Score (1-5)
+- Findings: file_path, line range, severity, category, message, suggestion, confidence
+- Created timestamp
+
+**When to call:**
+- After `dk_submit` to see full review details (submit response only has summary)
+- Any time to query an older changeset's review
+- After receiving a `changeset.review.completed` event via `dk_watch` (deep review)
+
+---
+
 ## Approve
 
 **Tool:** `dk_approve`
@@ -149,7 +175,7 @@ agent typically approves all sub-agents' changesets after they finish.
 - The changeset is now eligible for merge
 
 **For automated pipelines:** Use `/dkod:land` to auto-approve all submitted changesets,
-merge them, and push a PR in one step. Only stops if conflicts are detected.
+merge them, and push a PR in one step. Stops if the review score is < 3, "error" findings are present, or conflicts are detected.
 
 ---
 
@@ -344,10 +370,13 @@ After all three agents submit, the orchestrator lands everything:
 ```
 Orchestrator
 │
+├─ dk_review (Agent A's changeset) → score 5, no errors ✓
 ├─ dk_approve (Agent A's changeset) ✓
 ├─ dk_merge (Agent A's changeset) ✓
+├─ dk_review (Agent B's changeset) → score 4, no errors ✓
 ├─ dk_approve (Agent B's changeset) ✓
 ├─ dk_merge (Agent B's changeset) ✓  ← auto-rebases on top of A's merge
+├─ dk_review (Agent C's changeset) → score 5, no errors ✓
 ├─ dk_approve (Agent C's changeset) ✓
 ├─ dk_merge (Agent C's changeset) ✓  ← auto-rebases on top of A+B
 │

@@ -11,8 +11,11 @@ Run the full landing pipeline for all submitted changesets in the current repo.
 
 1. Call `dk_status` to see all active sessions and their changesets
 2. For each submitted changeset:
-   a. Call `dk_approve` to approve it (if not already approved)
-   b. Call `dk_merge` to merge it into the codebase
+   a. Call `dk_review` to check the code review score and findings
+      - Score >= 3 and no "error" findings -> proceed to approve
+      - Score < 3 or "error" findings -> report findings to user, do NOT approve
+   b. Call `dk_approve` to approve it (if not already approved)
+   c. Call `dk_merge` to merge it into the codebase
 3. After all changesets are merged, call `dk_push` with mode="pr" to create a GitHub PR
 
 ## Conflict handling
@@ -30,7 +33,7 @@ If no arguments, ask the user for a branch name and PR title.
 
 ## Important
 
-- This command orchestrates dk_approve -> dk_merge -> dk_push in sequence
+- This command orchestrates dk_review -> dk_approve -> dk_merge -> dk_push in sequence
 - Each step must succeed before proceeding to the next
 - If any step fails, stop and report the error
 - The resulting PR has one commit per agent's merged changeset
