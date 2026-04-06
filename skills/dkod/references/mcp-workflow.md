@@ -175,7 +175,7 @@ agent typically approves all sub-agents' changesets after they finish.
 - The changeset is now eligible for merge
 
 **For automated pipelines:** Use `/dkod:land` to auto-approve all submitted changesets,
-merge them, and push a PR in one step. Only stops if conflicts are detected.
+merge them, and push a PR in one step. Stops if the review score is < 3, "error" findings are present, or conflicts are detected.
 
 ---
 
