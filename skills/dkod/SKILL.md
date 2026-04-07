@@ -274,6 +274,19 @@ Do not serialize work unless tasks have strict sequential dependencies (Agent B 
 start until Agent A's output exists). Even then, consider whether Agent B can start on other
 parts of its work while waiting.
 
+## Troubleshooting dk_connect errors
+
+If `dk_connect` fails, **do not stall or retry silently**. Surface the error to the user immediately.
+
+| Error | Cause | Action |
+|-------|-------|--------|
+| `PermissionDenied: repository '...' is not connected` | Repo not added to dkod | Tell the user: **"This repository isn't connected to your dkod account. Open https://app.dkod.io, go to Repositories → Add Repository, add it, then retry."** |
+| `PermissionDenied` (any other) | Auth or access issue | Tell the user the exact error and ask them to check their dkod dashboard |
+| `Unauthenticated` | Session expired or no token | Ask the user to re-authenticate (run `/plugin` in Claude Code, or check MCP config) |
+| Connection refused / timeout | Server unreachable | Check if using local (`[::1]:50051`) vs cloud (`api.dkod.io`). If local, ask user to start the server. |
+
+**For sub-agents:** If `dk_connect` fails, the sub-agent MUST report the error back to its parent via SendMessage (or return the error as its result). Never silently stall — that leaves the orchestrator and user waiting forever with no indication of what went wrong.
+
 ## Protocol reference
 
 For the full dkod MCP workflow (connect, context, file operations, submit, verify, review, resolve, close, approve, merge, push, status, watch),

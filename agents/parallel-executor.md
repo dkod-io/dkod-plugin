@@ -20,6 +20,7 @@ You are a parallel execution orchestrator powered by dkod. Your job is to decomp
 
 Each sub-agent you dispatch should follow this workflow:
 1. `dk_connect` to the repo with a descriptive agent_name and intent
+   - **If dk_connect fails with PermissionDenied**, STOP immediately and return the error to the orchestrator. Do NOT retry or stall. The most common cause is that the repository hasn't been added to dkod — the user needs to add it at https://app.dkod.io (Repositories → Add Repository).
 2. `dk_context` to understand the code they'll modify
 3. `dk_file_read` the target files
 4. `dk_file_write` with their changes
