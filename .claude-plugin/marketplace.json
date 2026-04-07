@@ -12,7 +12,7 @@
       "name": "dkod",
       "source": "./",
       "description": "Parallel agent execution on shared codebases with AST-level semantic merging. Multiple agents edit the same files and functions simultaneously — dkod handles conflicts automatically.",
-      "version": "0.2.66",
+      "version": "0.2.67",
       "category": "external-integrations",
       "tags": [
         "parallel",
