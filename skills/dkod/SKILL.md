@@ -285,7 +285,7 @@ If `dk_connect` fails, **do not stall or retry silently**. Surface the error to 
 | `Unauthenticated` | Session expired or no token | Ask the user to re-authenticate (run `/plugin` in Claude Code, or check MCP config) |
 | Connection refused / timeout | Server unreachable | Check if using local (`[::1]:50051`) vs cloud (`api.dkod.io`). If local, ask user to start the server. |
 
-**For sub-agents:** If `dk_connect` fails, the sub-agent MUST report the error back to its parent via SendMessage (or return the error as its result). Never silently stall — that leaves the orchestrator and user waiting forever with no indication of what went wrong.
+**For sub-agents:** If `dk_connect` fails, the sub-agent MUST report the error back to its parent — via SendMessage in Claude Code, or by returning the error as its result in other environments. Never silently stall — that leaves the orchestrator and user waiting forever with no indication of what went wrong.
 
 ## Protocol reference
 
